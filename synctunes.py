@@ -15,8 +15,6 @@ parser.add_argument('-c', '--config', help='Config file', required=False, defaul
 parser.add_argument('-s', '--source', help='Path to audio lib', required=False, default='.')
 parser.add_argument('-d', '--dest', help='USB mount point', required=False, default='/Volumes/MUSIC')
 parser.add_argument('-t', '--tmpdir', help='tmp directory', required=False, default='tmp')
-parser.add_argument('-a', '--album_chars', help='Number of characters in album name to display',
-                    required=False, default=None)
 args = parser.parse_args()
 
 if args.config:
@@ -47,7 +45,7 @@ srcfiles = [os.path.realpath(os.path.join(dirpath, f))
 
 def meta_to_artist_title_album_track(m):
     def strip(s):
-        return s.replace('/', '-').replace('"', '').encode('ascii', 'ignore')
+        return s.replace('/', '-').replace('"', '').encode('ascii', 'skip')
 
     artist = m.tag.album_artist if m.tag.album_artist else m.tag.artist
     artist = strip(re.sub('^[tT]he ', '', artist))
@@ -75,15 +73,16 @@ for f in srcfiles:
     try:
         m = eyed3.load(f)
         artist, album, track, order = meta_to_artist_title_album_track(m)
+
+        for key, skip_dict in (('artist_skip', artist), ('album_skip', album), ('genre_igore', m.tag.genre)):
+            if config[skip_dict] and key in config[skip_dict]:
+                break
+        else:
+            print 'processing', artist, album, track
+            artist_album_to_tracks[(artist, album)].append((order, track, f.encode('ascii', 'skip')))
     except Exception as e:
         print e
 
-    for key, ignore_dict in (('artist_ignore', artist), ('album_ignore', album), ('genre_igore', m.tag.genre)):
-        if config[ignore_dict] and key in config[ignore_dict]:
-            break
-    else:
-        print 'processing', artist, album, track
-        artist_album_to_tracks[(artist, album)].append((order, track, f.encode('ascii', 'ignore')))
 
 # create a tmp directory with symlinks to the tracks organized the way we want
 # it on the USB stick - that will allow us to use rsync to to copy/update
@@ -92,7 +91,7 @@ for artist, album in artist_album_to_tracks:
         # one folder per artist, with first N chars of album name prepended
         # to each song, followed by sort order and track name.  This
         # will allow us to sort by album, and still see a bit of the track name
-        fn = '{album}-{track:02d}-{name}.{ext}'.format(album=album[:config['album_chars']],
+        fn = '{album}-{track:02d}-{name}.{ext}'.format(album=album,
                                                        track=i + 1,
                                                        name=name,
                                                        ext=path.split('.')[-1])
