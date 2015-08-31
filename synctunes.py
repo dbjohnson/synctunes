@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import os
 import shutil
@@ -22,7 +23,8 @@ if args.config:
     with open(args.config, 'r') as fh:
         config = defaultdict(lambda: None, json.load(fh))
 else:
-    config['source'] = args.path.realpath(args.source)
+    config = defaultdict(lambda: None)
+    config['source'] = os.path.realpath(args.source)
     config['dest'] = os.path.realpath(args.dest)
     config['tmpdir'] = os.path.realpath(args.tmpdir)
     config['album_chars'] = None
@@ -45,7 +47,7 @@ srcfiles = [os.path.realpath(os.path.join(dirpath, f))
 
 def meta_to_artist_title_album_track(m):
     def strip(s):
-        return s.replace('/', '-').replace('"', '').encode('ascii', 'skip')
+        return s.replace('/', '-').replace('"', '').encode('ascii', 'ignore')
 
     artist = m.tag.album_artist if m.tag.album_artist else m.tag.artist
     artist = strip(re.sub('^[tT]he ', '', artist))
@@ -79,10 +81,9 @@ for f in srcfiles:
                 break
         else:
             print 'processing', artist, album, track
-            artist_album_to_tracks[(artist, album)].append((order, track, f.encode('ascii', 'skip')))
+            artist_album_to_tracks[(artist, album)].append((order, track, f))
     except Exception as e:
-        print e
-
+        print e.message
 
 # create a tmp directory with symlinks to the tracks organized the way we want
 # it on the USB stick - that will allow us to use rsync to to copy/update
@@ -98,10 +99,10 @@ for artist, album in artist_album_to_tracks:
         dst = os.path.join(config['tmpdir'], artist, fn)
         if not os.path.exists(os.path.dirname(dst)):
             os.makedirs(os.path.dirname(dst))
-        os.system('ln -s "{src}" "{dst}"'.format(src=path, dst=dst))
+        subprocess.check_call(['ln', '-s', path, dst])
 
 os.system('cd "{tmp}"; rsync -arLv . "{dst}" --delete'.format(tmp=config['tmpdir'],
-                                                               dst=config['dest']))
+                                                              dst=config['dest']))
 
 # here's the gross part - we have to sort the files in the FAT32 filesystem
 # to make sure they are displayed properly.  The fatsort utility will do this,
@@ -114,4 +115,3 @@ os.system('sudo fatsort /dev/{device}'.format(device=device))
 
 # clean up and go home
 shutil.rmtree(config['tmpdir'])
-
