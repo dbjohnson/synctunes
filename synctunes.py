@@ -12,10 +12,11 @@ from collections import defaultdict
 import eyed3
 
 parser = argparse.ArgumentParser(description='Copy audio library to USB')
-parser.add_argument('-c', '--config', help='Config file', required=False, default=None)
+parser.add_argument('-c', '--config', help='Config file', required=False, default='config.json')
 parser.add_argument('-s', '--source', help='Path to audio lib', required=False, default='.')
 parser.add_argument('-d', '--dest', help='USB mount point', required=False, default='/Volumes/MUSIC')
 parser.add_argument('-t', '--tmpdir', help='tmp directory', required=False, default='tmp')
+parser.add_argument('-u', '--update', help='update (add only)', default=True, action='store_true')
 args = parser.parse_args()
 
 if args.config:
@@ -31,7 +32,7 @@ else:
 
 for dirname in ('source', 'dest'):
     config[dirname] = os.path.realpath(config[dirname])
-    assert os.path.exists(config[dirname]), '{} not found!'.format(dirname)
+    assert os.path.exists(config[dirname]), '{} directory not found at {}!'.format(dirname, config[dirname])
 
 config['tmpdir'] = os.path.realpath(config['tmpdir'])
 if os.path.exists(config['tmpdir']):
@@ -101,8 +102,9 @@ for artist, album in artist_album_to_tracks:
             os.makedirs(os.path.dirname(dst))
         subprocess.check_call(['ln', '-s', path, dst])
 
-os.system('cd "{tmp}"; rsync -arLv . "{dst}" --delete'.format(tmp=config['tmpdir'],
-                                                              dst=config['dest']))
+os.system('cd "{tmp}"; rsync -arLv . "{dst}" {delete}'.format(tmp=config['tmpdir'],
+                                                              dst=config['dest'],
+                                                              delete='--delete' if not args.update else ''))
 
 # here's the gross part - we have to sort the files in the FAT32 filesystem
 # to make sure they are displayed properly.  The fatsort utility will do this,
