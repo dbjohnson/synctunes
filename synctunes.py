@@ -93,11 +93,13 @@ def get_artist_album_to_track_info(config):
         except Exception as e:
             print e.message
 
+    return artist_album_to_tracks
+
 
 def copy_tracks(config):
     # create a tmp directory with symlinks to the tracks organized the way we want
     # it on the USB stick - that will allow us to use rsync to to copy/update
-    for (artist, album), tracks in get_artist_album_to_track_info(config):
+    for (artist, album), tracks in get_artist_album_to_track_info(config).items():
         for i, (track, name, path) in enumerate(sorted(tracks)):
             # one folder per artist, with album name prepended
             # to each song, followed by sort order and track name.  This
