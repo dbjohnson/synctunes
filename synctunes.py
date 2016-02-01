@@ -84,8 +84,8 @@ def get_artist_album_to_track_info(config):
             m = eyed3.load(f)
             artist, album, track, order = meta_to_artist_title_album_track(m)
 
-            for key, skip_dict in (('artist_skip', artist), ('album_skip', album), ('genre_igore', m.tag.genre)):
-                if config[skip_dict] and key in config[skip_dict]:
+            for key, skip_list in (('artist_ignore', artist), ('album_ignore', album), ('genre_ignore', m.tag.genre)):
+                if config[skip_list] and key in config[skip_list]:
                     break
             else:
                 print 'processing', artist, album, track
