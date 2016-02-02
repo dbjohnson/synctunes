@@ -121,7 +121,7 @@ def copy_tracks(config):
     # to make sure they are displayed properly.  The fatsort utility will do this,
     # but requires sudo
     print 'Please enter your password to sort files on the USB stick'
-    cmd = 'diskutil unmount {dest}'.format(dest=config['dest'])
+    cmd = 'diskutil unmount force {dest}'.format(dest=config['dest'])
     stdout, _ = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).communicate()
     device = re.match('Volume.* on ([a-zA-Z0-9]+) unmounted', stdout).groups()[0]
     os.system('sudo fatsort /dev/{device}'.format(device=device))
