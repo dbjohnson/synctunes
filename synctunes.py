@@ -76,7 +76,7 @@ def get_artist_album_to_track_info(config):
     artist_album_to_tracks = defaultdict(list)
     src_files = [os.path.realpath(os.path.join(dirpath, f))
                  for dirpath, dirnames, files in os.walk(config['source'])
-                 for f in files if f.endswith(('.mp3', '.aac'))]
+                 for f in files if f.lower().endswith(('.mp3', '.aac'))]
 
     # aggregate track paths by artist, album, and track no
     for f in src_files:
